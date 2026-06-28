@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LoadOpt Pro — Load Optimisation System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/static/css/main.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="14" width="12" height="16" rx="2" fill="#2E6DA4"/>
+        <rect x="16" y="8"  width="14" height="22" rx="2" fill="#1B3A5C"/>
+        <rect x="6"  y="2"  width="10" height="10" rx="2" fill="#4A90D9"/>
+      </svg>
+      <span class="brand-name">LoadOpt <em>Pro</em></span>
+    </div>
+    <nav class="header-tabs">
+      <button class="tab-btn active" data-tab="input">Input</button>
+      <button class="tab-btn" data-tab="results" id="tab-btn-results" disabled>Results</button>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-outline" id="btn-export-excel" style="display:none">↓ Excel</button>
+      <button class="btn-outline" id="btn-export-pdf" style="display:none">↓ PDF</button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════ INPUT TAB ═══════════════════════════════ -->
+<div class="tab-content active" id="tab-input">
+<div class="page-grid">
+
+  <!-- LEFT PANEL -->
+  <aside class="panel panel-left">
+
+    <!-- CONTAINER SELECTION -->
+    <section class="card" id="card-containers">
+      <div class="card-header">
+        <h2>Container Fleet</h2>
+        <button class="btn-ghost small" id="btn-select-all-containers">Select All</button>
+      </div>
+      <div class="fleet-list" id="fleet-list"></div>
+      <div class="divider-label">Custom Container</div>
+      <div class="custom-container-form">
+        <div class="form-row">
+          <div class="field"><label>Name</label><input type="text" required id="cc-name" placeholder="My Truck"/></div>
+        </div>
+        <div class="form-row two-col">
+          <div class="field"><label>L (mm)</label><input type="number" onkeydown="if(event.key === '-') event.preventDefault();" id="cc-l" min="0.01" step="any" required placeholder="9000"/></div>
+          <div class="field"><label>W (mm)</label><input type="number" onkeydown="if(event.key === '-') event.preventDefault();" id="cc-w" min="0.01" step="any" required placeholder="2400"/></div>
+          <div class="field"><label>H (mm)</label><input type="number" onkeydown="if(event.key === '-') event.preventDefault();" id="cc-h" min="0.01" step="any" required placeholder="2800"/></div>
+          <div class="field"><label>Max Wt (kg)</label><input type="number" onkeydown="if(event.key === '-') event.preventDefault();" min="0.01" required step="any" id="cc-wt" placeholder="20000"/></div>
+        </div>
+        <button class="btn-secondary full-width" id="btn-add-container">+ Add Container</button>
+      </div>
+    </section>
+
+    <!-- ROTATION CONFIG -->
+    <section class="card" id="card-rotations">
+      <div class="card-header">
+        <h2>Allowed Rotations</h2>
+        <span class="tooltip-icon" title="Select which face orientations are permitted. These apply globally unless overridden per box.">?</span>
+      </div>
+      <p class="card-sub">Choose which rotations are allowed for placing boxes:</p>
+      <div class="rotation-grid" id="rotation-grid">
+        <!-- Filled by JS -->
+      </div>
+    </section>
+
+  </aside>
+
+  <!-- RIGHT PANEL – BOX INPUTS -->
+  <main class="panel panel-main">
+    <section class="card full-height">
+      <div class="card-header">
+        <h2>Cargo Items</h2>
+        <button class="btn-primary" id="btn-add-box">+ Add Box</button>
+      </div>
+
+      <!-- Box Table -->
+      <div class="box-table-wrap">
+        <table class="box-table" id="box-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>L (mm)</th><th>W (mm)</th><th>H (mm)</th>
+              <th>Qty</th>
+              <th>Gross Wt/unit (kg)</th>
+              <th>Color</th>
+              <th>Rotations</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="box-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Totals bar -->
+      <div class="totals-bar" id="totals-bar">
+        <div class="total-chip"><span class="label">Items</span><span class="val" id="tot-items">0</span></div>
+        <div class="total-chip"><span class="label">Total Boxes</span><span class="val" id="tot-boxes">0</span></div>
+        <div class="total-chip"><span class="label">Total Weight</span><span class="val" id="tot-wt">0 kg</span></div>
+        <div class="total-chip"><span class="label">Total Volume</span><span class="val" id="tot-vol">0 m³</span></div>
+      </div>
+
+      <!-- Optimize button -->
+      <div class="optimize-bar">
+        <button class="btn-optimize" id="btn-optimize">
+          <span class="btn-optimize-icon">⬡</span>
+          Run Optimisation
+        </button>
+        <div class="spinner" id="spinner" style="display:none"></div>
+      </div>
+    </section>
+  </main>
+
+</div><!-- /page-grid -->
+</div><!-- /tab-input -->
+
+<!-- ═══════════════════════════════ RESULTS TAB ══════════════════════════════ -->
+<div class="tab-content" id="tab-results">
+  <div class="results-layout">
+
+    <!-- Summary Bar -->
+    <div class="summary-banner" id="summary-banner"></div>
+
+    <!-- Container Tabs -->
+    <div class="container-nav" id="container-nav"></div>
+
+    <!-- 3D Viewer -->
+    <div class="viewer-section">
+      <div class="viewer-wrap" id="viewer-wrap">
+        <canvas id="three-canvas"></canvas>
+        <div class="viewer-overlay">
+          <div class="viewer-info" id="viewer-info"></div>
+          <div class="viewer-controls">
+            <button class="vbtn" id="vbtn-play" title="Play placement animation">▶ Animate</button>
+            <button class="vbtn" id="vbtn-reset" title="Reset view">↺ Reset</button>
+            <button class="vbtn" id="vbtn-wireframe" title="Toggle wireframe">⬡ Wire</button>
+            <button class="vbtn" id="vbtn-explode" title="Explode view">✦ Explode</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats sidebar -->
+      <div class="stats-sidebar" id="stats-sidebar"></div>
+    </div>
+
+    <!-- Placement Table -->
+    <div class="placement-table-wrap card" id="placement-table-wrap"></div>
+
+  </div>
+</div>
+
+<!-- ROTATION MODAL -->
+<div class="modal-overlay" id="rotation-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Per-Box Rotation Override</h3>
+      <button class="modal-close" id="modal-close">×</button>
+    </div>
+    <p class="modal-sub">Override allowed rotations for this specific box type:</p>
+    <div class="rotation-grid" id="modal-rotation-grid"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="modal-cancel">Cancel</button>
+      <button class="btn-primary" id="modal-save">Apply</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/constants.js"></script>
+<script src="/static/js/ui.js"></script>
+<script src="/static/js/viewer3d.js"></script>
+<script src="/static/js/main.js"></script>
+</body>
+</html>
